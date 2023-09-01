@@ -45,7 +45,7 @@ admin.site.register(History, HistoryAdmin)
 
 class TextHistoryAdmin(admin.ModelAdmin):
     inlines = ChoiceInline,
-    list_display = ['history', 'text']
+    list_display = ['history', 'text', 'previous']
 admin.site.register(TextHistory, TextHistoryAdmin)
 
 

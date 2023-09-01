@@ -60,6 +60,11 @@ class TextHistory(models.Model):
 
     text = models.TextField(null=True, blank=True)
     
+    def previous(self):
+        if self.choice:
+            return self.choice
+        else:
+            return 'First Chapter'
     
     def __str__ (self):
         return self.text

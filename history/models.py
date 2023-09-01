@@ -57,13 +57,18 @@ class History(BaseModel):
         return users
         
     def __str__ (self):
-        return f'{self.title} (V: {self.version})'
+        return f'{self.title}'
+    
     
     def save(self, *args, **kwargs):
+        
         if self.pk and self.published == True and self.saved_histories.exists():
              
             print("historia jugada x usuarios y publicada que debe ser clonada y con una nueva versión")
-            new_version = self.version + 1
+            
+            new_version = self.version + 1 # TODO: here is the story doesnt have big changes, only change the deicmal field, else change the int. how to get that?
+            
+            
             new_version = History.objects.create(
                 title=self.title,
                 genre=self.genre,

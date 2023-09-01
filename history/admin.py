@@ -39,7 +39,7 @@ class HistoryInline(admin.TabularInline):
     
 class HistoryAdmin(admin.ModelAdmin):
     inlines = TextHistoryInline, LikesInline
-    list_display = ['title', 'user', 'get_likes']
+    list_display = ['title', 'version','user', 'get_likes', 'get_users_who_liked']
 admin.site.register(History, HistoryAdmin)
 
 

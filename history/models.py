@@ -2,7 +2,18 @@ from django.db import models
 from django.contrib.auth.models import User
 
 
-class Profile(models.Model):
+
+class BaseModel(models.Model):
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_updated = models.DateTimeField(auto_now=True)
+    
+    
+    class Meta:
+        abstract = True
+        
+        
+
+class Profile(BaseModel):
     GENDER_CHOICES = [
         ("M", "Masculino"),
         ("F", "Femenino"),
@@ -20,25 +31,55 @@ class Genre(models.Model):
     def __str__ (self):
         return self.name
 
-class History(models.Model):
+class History(BaseModel):
     
     title = models.CharField(max_length=150)
     genre = models.ForeignKey(Genre, on_delete=models.CASCADE, related_name="histories")
-    user = models.ForeignKey(Profile, on_delete=models.CASCADE,  related_name="histories")
-    version = models.DecimalField(default=1, max_digits=4, decimal_places=2)
+    user = models.ForeignKey(Profile, on_delete=models.CASCADE,  related_name="histories", verbose_name="author")
+    
+    version = models.DecimalField(default=1, max_digits=4, decimal_places=2, editable=False)
+    old = models.BooleanField(default=False) 
     published = models.BooleanField(default=False)
     
+        
     @property
     def get_likes(self):
         likes = self.likes.all()
         return likes.count()
+    
+    @property
+    def get_users_who_liked(self):
+        likes = self.likes.all()
+        users = []
+        for like in likes:
+            users.append(like.user)
+            
+        return users
         
     def __str__ (self):
-        return self.title
+        return f'{self.title} (V: {self.version})'
+    
+    def save(self, *args, **kwargs):
+        if self.pk and self.published == True and self.saved_histories.exists():
+             
+            print("historia jugada x usuarios y publicada que debe ser clonada y con una nueva versión")
+            new_version = self.version + 1
+            new_version = History.objects.create(
+                title=self.title,
+                genre=self.genre,
+                user=self.user,
+                version = new_version,
+                published = False)
+            
+            self.old = True
+            self.published = False
+            
+        super().save(*args, **kwargs)
+
     
 
 
-class Saved(models.Model):
+class Saved(BaseModel):
     user = models.ForeignKey(Profile, related_name="saved_histories", on_delete=models.CASCADE)
     history = models.ForeignKey(History, related_name="saved_histories", on_delete=models.CASCADE)
     stage = models.ForeignKey('TextHistory', related_name="saved_histories", on_delete=models.CASCADE)
@@ -47,14 +88,14 @@ class Saved(models.Model):
     def __str__ (self):
         return f'{self.user.user.username} played {self.history.title} (saved)'
     
-class Like(models.Model):
+class Like(BaseModel):
     user = models.ForeignKey(Profile, related_name="likes", on_delete=models.CASCADE)
     history = models.ForeignKey(History, related_name="likes", on_delete=models.CASCADE)
     def __str__ (self):
         return f'{self.user.user.username} liked {self.history.title}'
 
 
-class TextHistory(models.Model):
+class TextHistory(BaseModel):
     
     history = models.ForeignKey(History, on_delete=models.CASCADE,  related_name="texts", null=True, blank=True)
 
@@ -71,7 +112,7 @@ class TextHistory(models.Model):
     
     
     
-class Choice(models.Model):
+class Choice(BaseModel):
    
     option = models.CharField(max_length=500)
     

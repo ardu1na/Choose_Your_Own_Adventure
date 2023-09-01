@@ -28,6 +28,11 @@ class History(models.Model):
     version = models.DecimalField(default=1, max_digits=4, decimal_places=2)
     published = models.BooleanField(default=False)
     
+    @property
+    def get_likes(self):
+        likes = self.likes.all()
+        return likes.count()
+        
     def __str__ (self):
         return self.title
     
@@ -44,7 +49,7 @@ class Saved(models.Model):
     
 class Like(models.Model):
     user = models.ForeignKey(Profile, related_name="likes", on_delete=models.CASCADE)
-    history = models.ForeignKey(History, related_name="played_histories", on_delete=models.CASCADE)
+    history = models.ForeignKey(History, related_name="likes", on_delete=models.CASCADE)
     def __str__ (self):
         return f'{self.user.user.username} liked {self.history.title}'
 
@@ -70,3 +75,7 @@ class Choice(models.Model):
 
     def __str__ (self):
         return self.option
+    
+    @property
+    def get_history_title (self):
+        return self.previous_text.history.title

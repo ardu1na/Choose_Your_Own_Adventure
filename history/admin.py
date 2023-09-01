@@ -39,11 +39,13 @@ class HistoryInline(admin.TabularInline):
     
 class HistoryAdmin(admin.ModelAdmin):
     inlines = TextHistoryInline, LikesInline
+    list_display = ['title', 'user', 'get_likes']
 admin.site.register(History, HistoryAdmin)
 
 
 class TextHistoryAdmin(admin.ModelAdmin):
     inlines = ChoiceInline,
+    list_display = ['history', 'text']
 admin.site.register(TextHistory, TextHistoryAdmin)
 
 
@@ -52,9 +54,14 @@ class ProfileAdmin(admin.ModelAdmin):
 admin.site.register(Profile, ProfileAdmin)
 
 
+class ChoiceAdmin(admin.ModelAdmin):
+    list_display = ['get_history_title', 'option', 'previous_text', 'next_text']
+admin.site.register(Choice, ChoiceAdmin)
+
+
+
     
     
-admin.site.register(Choice)
 admin.site.register(Genre)
 admin.site.register(Like)
 admin.site.register(Saved)

@@ -1,6 +1,6 @@
+from decimal import Decimal, ROUND_DOWN
 from django.db import models
 from django.contrib.auth.models import User
-
 
 
 class BaseModel(models.Model):
@@ -39,13 +39,25 @@ class History(BaseModel):
     genre = models.ForeignKey(Genre, on_delete=models.CASCADE, related_name="histories")
     author = models.ForeignKey(Profile, on_delete=models.CASCADE,  related_name="histories", verbose_name="author")
     
-    version = models.DecimalField(default=1, max_digits=4, decimal_places=1, editable=False)
+    version = models.DecimalField(default=1, max_digits=4, decimal_places=1)
     
     published = models.BooleanField(default=False)
     
     has_changes = models.BooleanField(default=False)
     has_big_changes = models.BooleanField(default=False)
     
+    
+    def save(self, *args, **kwargs):
+        if self.pk and self.published and self.is_saved:
+            
+            if self.has_big_changes:
+                self.version = self.version.quantize(Decimal('1.'), rounding=ROUND_DOWN)
+                self.version = self.version + 1
+                self.has_big_changes = False
+            elif self.has_changes:
+                self.version += Decimal(0.1)
+                self.has_changes = False
+        super().save(*args, **kwargs)  ñ
         
     @property
     def get_likes(self):
@@ -84,6 +96,15 @@ class Saved(BaseModel):
     
     def __str__ (self):
         return f'{self.player.user.username} played {self.stage.history.title} (saved)'
+
+
+
+
+
+
+
+
+
     
     
 class Like(BaseModel):
@@ -91,6 +112,12 @@ class Like(BaseModel):
     history = models.ForeignKey(History, related_name="likes", on_delete=models.CASCADE)
     def __str__ (self):
         return f'{self.user.user.username} liked {self.history.title}'
+
+
+
+
+
+
 
 
 class Text(BaseModel):

@@ -57,7 +57,7 @@ class History(BaseModel):
         return users
         
     def __str__ (self):
-        return f'{self.title}'
+        return f'{self.title} {self.version}'
     
     
     def save(self, *args, **kwargs):
@@ -66,7 +66,8 @@ class History(BaseModel):
              
             print("historia jugada x usuarios y publicada que debe ser clonada y con una nueva versión")
             
-            new_version = self.version + 1 # TODO: here is the story doesnt have big changes, only change the deicmal field, else change the int. how to get that?
+            
+            new_version = self.version + 1 # TODO: here is the story doesnt have big changes, only change the deicmal field, else change the int.
             
             
             new_version = History.objects.create(
@@ -75,6 +76,24 @@ class History(BaseModel):
                 user=self.user,
                 version = new_version,
                 published = False)
+            
+            texts = self.texts.all()
+            
+            for text in texts:
+                new_text = TextHistory.objects.create(
+                    history = new_version,
+                    text = text.text
+                )
+                
+                choices = text.choices.all()
+                
+                for choice in choices:
+                    new_choice = Choice.objects.create(
+                        option = choice.option,
+                        previous_text = new_text,
+                    )            
+                       
+            
             
             self.old = True
             self.published = False

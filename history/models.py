@@ -1,7 +1,7 @@
 from decimal import Decimal, ROUND_DOWN
 from django.db import models
 from django.contrib.auth.models import User
-from django.db.models.signals import pre_delete
+from django.db.models.signals import pre_delete, post_save
 from django.dispatch import receiver
 
 class BaseModel(models.Model):
@@ -47,8 +47,7 @@ class History(BaseModel):
     has_changes = models.BooleanField(default=False)
     has_big_changes = models.BooleanField(default=False)
     
-    # TODO: is last version
-
+    is_last_version = models.BooleanField(default=True)
     
     
     def save(self, *args, **kwargs):
@@ -72,7 +71,6 @@ class History(BaseModel):
                     published=False,
                     
                     )
-                new.save()
                 texts = self.texts.all()
                 new_texts= []
                 for text in texts:
@@ -85,12 +83,12 @@ class History(BaseModel):
                     new_text = Text(previous_text=previous_text, option=option, text=text.text)
                     new_text.save()
                     new_texts.append(new_text)
-                new.texts.set(new_texts)
+                new.texts.set(new_texts) # when lets see now how to make new texts with their changes
                 
                 
                 self.has_big_changes = False
-                self.published = False # is last version ?
-                
+                self.published = False 
+                self.is_last_version = False
                 
             elif self.has_changes:
                 self.version += Decimal(0.1)
@@ -213,12 +211,53 @@ class Text(BaseModel):
 
     
     def save(self, *args, **kwargs):
-        if self.history == None and self.is_start == False:
-            self.history = self.previous_text.history
+        
+        
+        if self.pk == None:
+        ## is new 
+            
+            # auto asign history when is not the first text
+            if self.history == None and self.is_start == False:
+                self.history = self.previous_text.history
+                
+            # duplicate all when history is saved by player    
+            if self.history and self.history.published and self.history.is_saved:
+                version = self.history.version.quantize(Decimal('1.'), rounding=ROUND_DOWN)
+                new_version = version + 1
+                
+                new = History.objects.create(
+                    author=self.history.author,
+                    about = self.history.about,
+                    genre= self.history.genre,
+                    title = self.history.title,
+                    version = new_version,
+                    published=False
+                    
+                    )
+                self.history.published = False
+                self.history.is_last_version = False
+                self.history.save()
+                texts = Text.objects.filter(history=self.history).exclude(pk=self.pk)
+                new_texts= []
+                for text in texts:
+                    if text.is_start:
+                        previous_text=None
+                        option = None
+                    else:
+                        previous_text=text.previous_text
+                        option = text.option
+                    new_text = Text.objects.create(previous_text=previous_text, option=option, text=text.text)
+                    new_texts.append(new_text)
+                
+                self.history = new 
+                new.texts.set(new_texts) 
+                # TODO: desde el front se manda a seguir editando el nuevo
+                
+        
         super().save(*args, **kwargs)
-        
-        
-        
+
+
+    
 @receiver(pre_delete, sender=Text)
 def text_deleted_handler(sender, instance, **kwargs):
     # When a Text instance is deleted, update its associated History's has_big_changes field to True

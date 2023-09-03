@@ -225,7 +225,7 @@ class Text(BaseModel):
         
         
         if self.pk == None:
-        ## is new 
+        ## is new TESTED OK
             
             # auto asign history when is not the first text
             if self.history == None and self.is_start == False:
@@ -263,17 +263,62 @@ class Text(BaseModel):
                 self.history = new 
                 new.texts.set(new_texts) 
                 # TODO: desde el front se manda a seguir editando el nuevo
+            super().save(*args, **kwargs)
         else:
-        # when instance is updated
             if self.need_duplicate:
-                # verificar si cambió el texto previo y darle para big_changes desde acá o desde allá
-                pass
-                # sino solo has_changes
-                # de alla
-                self.history.has_changes=True
-                self.history.save()               
+            
+                original_instance = self.__class__.objects.get(pk=self.pk)
+                if original_instance.previous_text != self.previous_text:
+                    
+                    version = self.history.version.quantize(Decimal('1.'), rounding=ROUND_DOWN)
+                    new_version = version + 1
+                    
+                    new = History.objects.create(
+                        author=original_instance.history.author,
+                        about = original_instance.history.about,
+                        genre= original_instance.history.genre,
+                        title = original_instance.history.title,
+                        version = new_version,
+                        published=False
+                        
+                        )
+                    old_history = original_instance.history
+                    old_history.published = False
+                    old_history.is_last_version = False                   
+                    
+                    old_texts = Text.objects.filter(history=original_instance.history).exclude(pk=self.pk)
+                    new_texts= []
+                    for text in old_texts:
+                        if text.is_start:
+                            previous_text=None
+                            option = None
+                        else:
+                            previous_text=text.previous_text
+                            option = text.option
+                            
+                        new_text = Text.objects.create(
+                            previous_text=previous_text,
+                            option=option,
+                            text=text.text
+                            )
+                        new_texts.append(new_text)
+                    
+                    self.history = new 
+                    super(self).save(*args, **kwargs)
+                    old_history.save()
+                    new.texts.set(new_texts) 
+                    # TODO: desde el front se manda a seguir editando el nuevo
+                    new.save()
+                    
+
+                    
+                else:
+                    self.history.has_changes = True
+                    super().save(*args, **kwargs)
+                    self.history.save()
+                
+            
         
-        super().save(*args, **kwargs)
 
 
     
@@ -283,3 +328,4 @@ def text_deleted_handler(sender, instance, **kwargs):
     if instance.history and instance.history.published and instance.history.is_saved:
         instance.history.has_big_changes = True
         instance.history.save()
+        ## TODO: HERE IT SHOULD CHANGE THE NEW VERSION OR ID FOR EACHOTHER BECAUSE IT CREATE A DPLICATE INSTANCE BUT WITH VALUE CHANGED. THE DELETED ONE IS MISS PLACED

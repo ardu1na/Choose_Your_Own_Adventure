@@ -34,12 +34,17 @@ class Genre(models.Model):
 class History(BaseModel):
     
     title = models.CharField(max_length=150)
+    about = models.CharField(max_length=800, blank=True, null= True)
+
     genre = models.ForeignKey(Genre, on_delete=models.CASCADE, related_name="histories")
-    user = models.ForeignKey(Profile, on_delete=models.CASCADE,  related_name="histories", verbose_name="author")
+    author = models.ForeignKey(Profile, on_delete=models.CASCADE,  related_name="histories", verbose_name="author")
     
-    version = models.DecimalField(default=1, max_digits=4, decimal_places=2, editable=False)
-    old = models.BooleanField(default=False) 
+    version = models.DecimalField(default=1, max_digits=4, decimal_places=1, editable=False)
+    
     published = models.BooleanField(default=False)
+    
+    has_changes = models.BooleanField(default=False)
+    has_big_changes = models.BooleanField(default=False)
     
         
     @property
@@ -55,62 +60,31 @@ class History(BaseModel):
             users.append(like.user)
             
         return users
-        
+
+    @property
+    def is_saved(self):
+        for choice in self.texts.all():
+            if choice.saved.exists():
+                return True
+            
+            
     def __str__ (self):
         return f'{self.title} {self.version}'
     
     
-    def save(self, *args, **kwargs):
-        
-        if self.pk and self.published == True and self.saved_histories.exists():
-             
-            print("historia jugada x usuarios y publicada que debe ser clonada y con una nueva versión")
-            
-            
-            new_version = self.version + 1 # TODO: here is the story doesnt have big changes, only change the deicmal field, else change the int.
-            
-            
-            new_version = History.objects.create(
-                title=self.title,
-                genre=self.genre,
-                user=self.user,
-                version = new_version,
-                published = False)
-            
-            texts = self.texts.all()
-            
-            for text in texts:
-                new_text = TextHistory.objects.create(
-                    history = new_version,
-                    text = text.text
-                )
-                
-                choices = text.choices.all()
-                
-                for choice in choices:
-                    new_choice = Choice.objects.create(
-                        option = choice.option,
-                        previous_text = new_text,
-                    )            
-                       
-            
-            
-            self.old = True
-            self.published = False
-            
-        super().save(*args, **kwargs)
-
     
 
 
 class Saved(BaseModel):
-    user = models.ForeignKey(Profile, related_name="saved_histories", on_delete=models.CASCADE)
-    history = models.ForeignKey(History, related_name="saved_histories", on_delete=models.CASCADE)
-    stage = models.ForeignKey('TextHistory', related_name="saved_histories", on_delete=models.CASCADE)
+    player = models.ForeignKey(Profile, related_name="saved", on_delete=models.CASCADE)
+    stage = models.ForeignKey('Text', related_name="saved", on_delete=models.CASCADE)
     finished = models.BooleanField(default=False)
     
+    # TODO: is current version
+    
     def __str__ (self):
-        return f'{self.user.user.username} played {self.history.title} (saved)'
+        return f'{self.player.user.username} played {self.stage.history.title} (saved)'
+    
     
 class Like(BaseModel):
     user = models.ForeignKey(Profile, related_name="likes", on_delete=models.CASCADE)
@@ -119,33 +93,49 @@ class Like(BaseModel):
         return f'{self.user.user.username} liked {self.history.title}'
 
 
-class TextHistory(BaseModel):
+class Text(BaseModel):
     
     history = models.ForeignKey(History, on_delete=models.CASCADE,  related_name="texts", null=True, blank=True)
 
+    previous_text = models.ForeignKey('Text', on_delete=models.CASCADE,  related_name="choices", blank=True, null=True)
+    
+    option = models.CharField(max_length=600, null=True, blank=True)
+ 
     text = models.TextField(null=True, blank=True)
     
-    def previous(self):
-        if self.choice:
-            return self.choice
-        else:
-            return 'First Chapter'
     
+        
     def __str__ (self):
-        return self.text
-    
-    
-    
-class Choice(BaseModel):
-   
-    option = models.CharField(max_length=500)
-    
-    previous_text = models.ForeignKey(TextHistory, on_delete=models.CASCADE,  related_name="choices")
-    next_text = models.OneToOneField(TextHistory, on_delete=models.CASCADE,  related_name="choice")
-
-    def __str__ (self):
-        return self.option
+        return self.option if self.option else self.history.title
     
     @property
     def get_history_title (self):
-        return self.previous_text.history.title
+        return self.history.title
+    
+    @property
+    def is_start (self):
+        if self.option == None:
+            return True
+    
+    @property
+    def is_end(self):
+        history = History.objects.get(pk=self.history.pk)
+        for choice in history.text.all():
+            if choice.previous_text == self:
+                return False
+        return True
+    
+    @property
+    def is_saved(self):
+        history = History.objects.get(pk=self.history.pk)
+        for choice in history.texts.all():
+            if choice.saved.exists():
+                return True
+            
+            
+    @property
+    def previous_option(self):
+        return self.previous_text if self.previous_text else "inicio de la historia"
+    
+    
+    # TODO: EN SAVE AJUSTAR PARAMETRO HISTORIA AUTOMATICAMENTE

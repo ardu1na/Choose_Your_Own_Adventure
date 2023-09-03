@@ -49,9 +49,13 @@ class History(BaseModel):
     
     is_last_version = models.BooleanField(default=True)
     
+    @property
+    def need_duplicate(self):
+        if self.pk and self.published and self.is_saved:
+            return True
     
     def save(self, *args, **kwargs):
-        if self.pk and self.published and self.is_saved:
+        if self.need_duplicate:
             
             if self.has_big_changes:
                 
@@ -83,8 +87,7 @@ class History(BaseModel):
                     new_text = Text(previous_text=previous_text, option=option, text=text.text)
                     new_text.save()
                     new_texts.append(new_text)
-                new.texts.set(new_texts) # when lets see now how to make new texts with their changes
-                
+                new.texts.set(new_texts)                 
                 
                 self.has_big_changes = False
                 self.published = False 
@@ -97,7 +100,6 @@ class History(BaseModel):
         super().save(*args, **kwargs)
       
       
-    # TODO: IS_NEWER
     
     @property
     def get_likes(self):
@@ -131,8 +133,14 @@ class Saved(BaseModel):
     player = models.ForeignKey(Profile, related_name="saved", on_delete=models.CASCADE)
     stage = models.ForeignKey('Text', related_name="saved", on_delete=models.CASCADE)
     finished = models.BooleanField(default=False)
-    
+    version = models.DecimalField(default=1, max_digits=4, decimal_places=1)
     # TODO: is current version +  finished into method
+    # override last saved 
+    
+    def save(self, *args, **kwargs):
+        self.version = self.stage.history.version
+        super().save(*args, **kwargs)
+    
     
     def __str__ (self):
         return f'{self.player.user.username} played {self.stage.history.title} (saved)'
@@ -208,7 +216,10 @@ class Text(BaseModel):
             return self.previous_text
     
     
-
+    @property
+    def need_duplicate(self):
+        if self.history and self.history.published and self.history.is_saved:
+            return True
     
     def save(self, *args, **kwargs):
         
@@ -220,8 +231,8 @@ class Text(BaseModel):
             if self.history == None and self.is_start == False:
                 self.history = self.previous_text.history
                 
-            # duplicate all when history is saved by player    
-            if self.history and self.history.published and self.history.is_saved:
+               
+            if self.need_duplicate: # duplicate all
                 version = self.history.version.quantize(Decimal('1.'), rounding=ROUND_DOWN)
                 new_version = version + 1
                 
@@ -252,7 +263,15 @@ class Text(BaseModel):
                 self.history = new 
                 new.texts.set(new_texts) 
                 # TODO: desde el front se manda a seguir editando el nuevo
-                
+        else:
+        # when instance is updated
+            if self.need_duplicate:
+                # verificar si cambió el texto previo y darle para big_changes desde acá o desde allá
+                pass
+                # sino solo has_changes
+                # de alla
+                self.history.has_changes=True
+                self.history.save()               
         
         super().save(*args, **kwargs)
 

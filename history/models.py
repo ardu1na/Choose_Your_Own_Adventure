@@ -75,8 +75,11 @@ class History(BaseModel):
                     published=False,
                     
                     )
+                
                 texts = self.texts.all()
+                
                 new_texts= []
+                
                 for text in texts:
                     if text.is_start:
                         previous_text=None
@@ -84,9 +87,16 @@ class History(BaseModel):
                     else:
                         previous_text=text.previous_text
                         option = text.option
-                    new_text = Text(previous_text=previous_text, option=option, text=text.text)
+                        
+                    new_text = Text(
+                        previous_text=previous_text,
+                        option=option,
+                        text=text.text
+                        )
                     new_text.save()
+                    
                     new_texts.append(new_text)
+                    
                 new.texts.set(new_texts)                 
                 
                 self.has_big_changes = False

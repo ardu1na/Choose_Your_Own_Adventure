@@ -4,10 +4,12 @@ from rest_framework import exceptions
 
 from users.models import CustomUser
 
-## TODO: 
-# manage history version when user delete add or change order of history texts choices
-# save that instnace if it is saved as not_published,
-# duplicate story and its texts within history.new_version_big_changes with the updated data
+######## UTILS
+class TextChangeNotAllowed(exceptions.APIException):
+    status_code = 400
+    default_detail = "Cannot change this text because the story is already being played by users."
+    default_code = "text_change_not_allowed"
+
 
 class BaseModel(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
@@ -18,12 +20,14 @@ class BaseModel(models.Model):
         abstract = True
         
            
-
+######### MAIN
 class Genre(models.Model):
     name = models.CharField(max_length=150)
     
     def __str__ (self):
         return self.name
+
+
 
 class Story(BaseModel):
     
@@ -90,6 +94,7 @@ class Story(BaseModel):
         return f'{self.title} {self.version}'
     
 
+
 class Text(BaseModel):
     
     story = models.ForeignKey(Story, on_delete=models.CASCADE,  related_name="texts", null=True, blank=True)
@@ -113,6 +118,13 @@ class Text(BaseModel):
                     raise TextChangeNotAllowed()
 
         super().save(*args, **kwargs)
+    
+    def delete(self, using=None, keep_parents=False):
+        if self.story.is_saved:
+            raise TextChangeNotAllowed()
+
+        super().delete(using=using, keep_parents=keep_parents)
+
         
     def __str__ (self):
         return self.option if self.option else self.story_title
@@ -134,11 +146,6 @@ class Text(BaseModel):
                 return False
         return True
     
-    @property
-    def is_saved(self):
-        story = Story.objects.get(pk=self.story.pk)
-        if story.is_saved:
-            return True
             
             
     @property
@@ -153,9 +160,9 @@ class Text(BaseModel):
     def need_duplicate(self):
         if self.story and self.story.published and self.story.is_saved:
             return True
-     
-    
+        return False
 
+    
 
 class Saved(BaseModel):
     player = models.ForeignKey(CustomUser, related_name="saved", on_delete=models.CASCADE)
@@ -172,6 +179,8 @@ class Saved(BaseModel):
     class Meta:
         verbose_name_plural = "Saved"
 
+
+############ SOCIAL
     
     
 class Like(BaseModel):
@@ -179,8 +188,6 @@ class Like(BaseModel):
     story = models.ForeignKey(Story, related_name="likes", on_delete=models.CASCADE)
     def __str__ (self):
         return f'{self.user.user.username} liked {self.story.title}'
-
-
 
 
     
@@ -207,13 +214,3 @@ class Comment(BaseModel):
     story = models.ForeignKey(Story, related_name="comments", on_delete=models.CASCADE)
     def __str__ (self):
         return f'{self.user.user.username} commeted {self.story.title}'
-
-
-
-class TextChangeNotAllowed(exceptions.APIException):
-    status_code = 400
-    default_detail = "Cannot change this text previous_text because the story is already being played by users."
-    default_code = "text_change_not_allowed"
-
-
-

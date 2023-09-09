@@ -36,7 +36,7 @@ class StorySerializer(serializers.ModelSerializer):
     author_data = AuthorSerializer(source='author', read_only=True)
     class Meta:
         model = Story
-        exclude = ['has_changes','has_big_changes','is_current_version','date_updated','date_created']
+        exclude = ['date_updated','date_created']
 
     def to_representation(self, instance):
         data = super().to_representation(instance)

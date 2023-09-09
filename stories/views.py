@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 
-from stories.models import Story, Text
+from stories.models import Story, Text, TextChangeNotAllowed
 from stories.serializers import StorySerializer, TextSerializer
 
 
@@ -28,6 +28,12 @@ class StoryViewSet(viewsets.ModelViewSet):
 class TextViewSet(viewsets.ModelViewSet):
     serializer_class = TextSerializer
 
+    def update(self, request, *args, **kwargs):
+        try:
+            return super().update(request, *args, **kwargs)
+        except TextChangeNotAllowed as e:
+            return Response({"error": str(e)}, status=e.status_code)
+
     def get_queryset(self):
         # Get the story_id from the URL parameter
         story_id = self.kwargs.get('story_id')
@@ -47,7 +53,7 @@ class TextViewSet(viewsets.ModelViewSet):
         
         # Filter the queryset to get the root text (no previous_text)
         root_text = queryset.filter(previous_text__isnull=True).first()
-
+        
         # Serialize the entire text tree starting from the root text
         serialized_tree = self.serialize_text_tree(root_text)
 

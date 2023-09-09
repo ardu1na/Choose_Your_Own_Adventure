@@ -38,7 +38,7 @@ class StoryInline(admin.TabularInline):
     
 class StoryAdmin(admin.ModelAdmin):
     inlines = TextInline, LikesInline, CommentInline, RateInline
-    list_display = ['title', 'version','author', 'get_likes', 'get_users_who_liked']
+    list_display = ['title', 'version','author','is_saved', 'get_likes', 'get_users_who_liked']
 admin.site.register(Story, StoryAdmin)
 
 

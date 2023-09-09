@@ -1,11 +1,12 @@
 from decimal import Decimal, ROUND_DOWN
 from django.db import models
+from rest_framework import exceptions
 
 from users.models import CustomUser
 
 ## TODO: 
 # manage history version when user delete add or change order of history texts choices
-# save that instnace if it is saved as not_published,  not current_version
+# save that instnace if it is saved as not_published,
 # duplicate story and its texts within history.new_version_big_changes with the updated data
 
 class BaseModel(models.Model):
@@ -36,14 +37,14 @@ class Story(BaseModel):
     
     published = models.BooleanField(default=False)
     
-    
-    is_current_version = models.BooleanField(default=True)
+    class Meta:
+        verbose_name_plural = "stories"
     
     @property
     def is_saved(self):
-        for choice in self.texts.all():
-            if choice.saved.exists():
-                return True
+        if self.saved.exists():
+            return True
+        return False
             
     @property
     def need_duplicate(self):
@@ -68,6 +69,7 @@ class Story(BaseModel):
             original_instance = Story.objects.get(pk=self.pk)
             if original_instance.title != self.title:
                 self.version = self.small_changes_new_version
+            
         super().save(*args, **kwargs)   
     
     @property
@@ -87,32 +89,88 @@ class Story(BaseModel):
     def __str__ (self):
         return f'{self.title} {self.version}'
     
+
+class Text(BaseModel):
     
+    story = models.ForeignKey(Story, on_delete=models.CASCADE,  related_name="texts", null=True, blank=True)
+
+    previous_text = models.ForeignKey('Text', on_delete=models.CASCADE,  related_name="choices", blank=True, null=True)
+    
+    option = models.CharField(max_length=600, null=True, blank=True)
+ 
+    text = models.TextField(null=True, blank=True)
+    
+    def save(self, *args, **kwargs):
+        if self.pk:
+            original_instance = Text.objects.get(pk=self.pk)
+            
+            if original_instance.option != self.option or original_instance.text != self.text:
+                self.story.version = self.story.small_changes_new_version
+                self.story.save()
+            
+            if original_instance.previous_text != self.previous_text:  
+                if self.is_saved:
+                    raise TextChangeNotAllowed()
+
+        super().save(*args, **kwargs)
+        
+    def __str__ (self):
+        return self.option if self.option else self.story_title
+    
+    @property
+    def story_title (self):
+        return self.story.title
+    
+    @property
+    def is_start (self):
+        if self.option == None:
+            return True
+    
+    @property
+    def is_end(self):
+        story = Story.objects.get(pk=self.story.pk)
+        for choice in story.text.all():
+            if choice.previous_text == self:
+                return False
+        return True
+    
+    @property
+    def is_saved(self):
+        story = Story.objects.get(pk=self.story.pk)
+        if story.is_saved:
+            return True
+            
+            
+    @property
+    def previous_option(self):
+        if self.is_start:
+            return "Start"
+        else:
+            return self.previous_text
+    
+    
+    @property
+    def need_duplicate(self):
+        if self.story and self.story.published and self.story.is_saved:
+            return True
+     
     
 
 
 class Saved(BaseModel):
     player = models.ForeignKey(CustomUser, related_name="saved", on_delete=models.CASCADE)
-    stage = models.ForeignKey('Text', related_name="saved", on_delete=models.CASCADE)
+    stage = models.ForeignKey(Text, related_name="saved", on_delete=models.CASCADE)
     finished = models.BooleanField(default=False)
-    version = models.DecimalField(default=1, max_digits=4, decimal_places=1)
-    
-    def save(self, *args, **kwargs):
-        self.version = self.stage.story.version
-        super().save(*args, **kwargs)
+    story =  models.ForeignKey(Story, related_name="saved", on_delete=models.CASCADE)
     
     
     def __str__ (self):
-        return f'{self.player} played {self.stage.story.title} (saved)'
-
-
-    @property
-    def is_current_version(self):
-        return self.stage.story.is_current_version
+        return f'{self.player} played {self.story.title} (saved)'
 
 
 
-
+    class Meta:
+        verbose_name_plural = "Saved"
 
     
     
@@ -152,65 +210,10 @@ class Comment(BaseModel):
 
 
 
+class TextChangeNotAllowed(exceptions.APIException):
+    status_code = 400
+    default_detail = "Cannot change this text previous_text because the story is already being played by users."
+    default_code = "text_change_not_allowed"
 
 
 
-class Text(BaseModel):
-    
-    story = models.ForeignKey(Story, on_delete=models.CASCADE,  related_name="texts", null=True, blank=True)
-
-    previous_text = models.ForeignKey('Text', on_delete=models.CASCADE,  related_name="choices", blank=True, null=True)
-    
-    option = models.CharField(max_length=600, null=True, blank=True)
- 
-    text = models.TextField(null=True, blank=True)
-    
-    def save(self, *args, **kwargs):
-        if self.pk:
-            original_instance = Text.objects.get(pk=self.pk)
-            if original_instance.option != self.option or original_instance.text != self.text:
-                self.story.version = self.story.small_changes_new_version
-                self.story.save()
-        super().save(*args, **kwargs)
-        
-    def __str__ (self):
-        return self.option if self.option else self.story_title
-    
-    @property
-    def story_title (self):
-        return self.story.title
-    
-    @property
-    def is_start (self):
-        if self.option == None:
-            return True
-    
-    @property
-    def is_end(self):
-        story = Story.objects.get(pk=self.story.pk)
-        for choice in story.text.all():
-            if choice.previous_text == self:
-                return False
-        return True
-    
-    @property
-    def is_saved(self):
-        story = Story.objects.get(pk=self.story.pk)
-        for choice in story.texts.all():
-            if choice.saved.exists():
-                return True
-            
-            
-    @property
-    def previous_option(self):
-        if self.is_start:
-            return "Start"
-        else:
-            return self.previous_text
-    
-    
-    @property
-    def need_duplicate(self):
-        if self.story and self.story.published and self.story.is_saved:
-            return True
- 

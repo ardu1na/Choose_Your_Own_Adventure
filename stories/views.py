@@ -3,8 +3,39 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 
-from stories.models import Story, Text
-from stories.serializers import StorySerializer, TextSerializer
+from stories.models import Story, Text,\
+    Saved
+from stories.serializers import StorySerializer, TextSerializer,\
+    SavedSerializer
+    
+class SavedViewSet(viewsets.ModelViewSet):
+    serializer_class = SavedSerializer
+
+    def get_queryset(self):
+        return Saved.objects.filter(player=self.request.user)
+
+    
+    def perform_create(self, serializer):
+        try: 
+            serializer.save(player=self.request.user)
+        except:
+            raise PermissionDenied("Permission denied")
+   
+
+    def perform_update(self, serializer):
+        try:
+            if serializer.player == self.request.user:
+                serializer.save()
+        except AttributeError:
+            raise PermissionDenied("You do not have permission to do this.")
+
+    def perform_destroy(self, instance):
+        if instance.player == self.request.user:
+            instance.delete()
+        else:
+            raise PermissionDenied("You do not have permission to delete this saved story.")
+
+
 
 class StoryViewSet(viewsets.ModelViewSet):
     queryset = Story.objects.all()

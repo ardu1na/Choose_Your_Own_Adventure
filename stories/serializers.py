@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from stories.models import Story, Text, Genre
+from stories.models import Story, Text, Genre, Saved
 from users.models import CustomUser
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -17,7 +17,10 @@ class AuthorSerializer(serializers.ModelSerializer):
     
     
     
-
+class SavedSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Saved
+        exclude = ['player',]
 
 
 class TextSerializer(serializers.ModelSerializer):

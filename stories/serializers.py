@@ -11,9 +11,11 @@ class GenreSerializer(serializers.ModelSerializer):
 
 
 class LikeSerializer(serializers.ModelSerializer):
+    date = serializers.ReadOnlyField(source='datetime')
+
     class Meta:
         model = Like
-        fields = '__all__'  
+        exclude = ['date_created',]
 
 class AuthorSerializer(serializers.ModelSerializer):
     class Meta:
@@ -41,6 +43,9 @@ class StorySerializer(serializers.ModelSerializer):
     genre_data = GenreSerializer(source='genre', read_only=True)
     author = AuthorSerializer(source='customuser', read_only=True)
     likes = serializers.ReadOnlyField(source='get_likes')
+    created = serializers.ReadOnlyField(source='created_at')
+    updated = serializers.ReadOnlyField(source='updated_at')
+
     class Meta:
         model = Story
         exclude = ['date_updated', 'date_created']  

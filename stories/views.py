@@ -4,9 +4,9 @@ from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 
 from stories.models import Story, Text,\
-    Saved
+    Saved, Like
 from stories.serializers import StorySerializer, TextSerializer,\
-    SavedSerializer
+    SavedSerializer, LikeSerializer
     
 class SavedViewSet(viewsets.ModelViewSet):
     serializer_class = SavedSerializer
@@ -35,6 +35,31 @@ class SavedViewSet(viewsets.ModelViewSet):
         else:
             raise PermissionDenied("You do not have permission to delete this saved story.")
 
+
+
+class LikeViewSet(viewsets.ModelViewSet):
+    serializer_class = LikeSerializer
+
+    def get_queryset(self):
+        return Like.objects.filter(user=self.request.user)
+
+    
+    def perform_create(self, serializer):
+        try:
+            # Set the 'user' field based on the 'request.user'
+            serializer.save(user=self.request.user)
+        except Exception as e:
+            print(f"Error creating like: {str(e)}")
+
+    def perform_update(self, serializer):
+        
+            raise PermissionDenied("You do not have permission to do this.")
+
+    def perform_destroy(self, instance):
+        if instance.user == self.request.user:
+            instance.delete()
+        else:
+            raise PermissionDenied("You do not have permission to delete this like.")
 
 
 class StoryViewSet(viewsets.ModelViewSet):

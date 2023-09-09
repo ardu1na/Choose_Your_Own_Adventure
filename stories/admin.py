@@ -39,6 +39,12 @@ class StoryInline(admin.TabularInline):
 class StoryAdmin(admin.ModelAdmin):
     inlines = TextInline, LikesInline, CommentInline, RateInline
     list_display = ['title', 'version','author','is_saved', 'get_likes', 'get_users_who_liked']
+    
+    def save_model(self, request, obj, form, change):
+        if obj.author == None:
+            obj.author = request.user
+        obj.save()
+        
 admin.site.register(Story, StoryAdmin)
 
 

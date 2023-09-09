@@ -43,7 +43,7 @@ class Story(BaseModel):
     about = models.CharField(max_length=800, blank=True, null= True)
 
     genre = models.ForeignKey(Genre, on_delete=models.CASCADE, related_name="stories")
-    author = models.ForeignKey(CustomUser, on_delete=models.CASCADE,  related_name="stories", editable=False)
+    author = models.ForeignKey(CustomUser, on_delete=models.CASCADE,  related_name="stories", editable=False, blank=True,  null=True)
     
     version = models.DecimalField(default=1, max_digits=4, decimal_places=2, editable=False)
     
@@ -51,6 +51,14 @@ class Story(BaseModel):
     
     class Meta:
         verbose_name_plural = "stories"
+        
+    @property
+    def created_at(self):
+        return f"{self.date_created.strftime('%d-%m-%Y %H:%M')}"
+    @property
+    def updated_at(self):
+        return f"{self.date_updated.strftime('%d-%m-%Y %H:%M')}"
+    
     
     @property
     def is_saved(self):
@@ -195,18 +203,26 @@ class Saved(BaseModel):
 
     class Meta:
         verbose_name_plural = "Saved"
+        unique_together = ['player', 'story']
 
 
 ############ SOCIAL
     
     
-class Like(BaseModel):
-    user = models.ForeignKey(CustomUser, related_name="likes", on_delete=models.CASCADE)
+class Like(models.Model):
+    user = models.ForeignKey(CustomUser, related_name="likes", on_delete=models.CASCADE, editable=False)
     story = models.ForeignKey(Story, related_name="likes", on_delete=models.CASCADE)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def datetime(self):
+        return f"{self.date_created.strftime('%d-%m-%Y %H:%M')}"
     def __str__ (self):
         return f'{self.user} liked {self.story.title}'
 
 
+    class Meta:
+        unique_together = ['user', 'story']
     
 class Rate(BaseModel):
     RATE_CHOICES = [
@@ -221,7 +237,7 @@ class Rate(BaseModel):
     user = models.ForeignKey(CustomUser, related_name="rated_stories", on_delete=models.CASCADE)
     story = models.ForeignKey(Story, related_name="rates", on_delete=models.CASCADE)
     def __str__ (self):
-        return f'{self.user.user.username} rated {self.story.title}'
+        return f'{self.user.username} rated {self.story.title}'
 
 
     
@@ -230,4 +246,11 @@ class Comment(BaseModel):
     user = models.ForeignKey(CustomUser, related_name="comments", on_delete=models.CASCADE)
     story = models.ForeignKey(Story, related_name="comments", on_delete=models.CASCADE)
     def __str__ (self):
-        return f'{self.user.user.username} commeted {self.story.title}'
+        return f'{self.user.username} commeted {self.story.title}'
+
+    @property
+    def created_at(self):
+        return f"{self.date_created.strftime('%d-%m-%Y %H:%M')}"
+    @property
+    def updated_at(self):
+        return f"{self.date_updated.strftime('%d-%m-%Y %H:%M')}"

@@ -3,11 +3,12 @@ from django.contrib import admin
 from rest_framework.routers import SimpleRouter
 from django.urls import path, include
 from stories.views import StoryViewSet, TextViewSet,\
-    SavedViewSet
+    SavedViewSet, LikeViewSet
 
 story_router = SimpleRouter()
 story_router.register(r'stories', StoryViewSet, basename='story')
 story_router.register(r'saved', SavedViewSet, basename="saved")
+story_router.register(r'likes', LikeViewSet, basename="like")
 
 urlpatterns = [
     path('admin/', admin.site.urls),

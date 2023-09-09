@@ -24,7 +24,7 @@ class Story(BaseModel):
     about = models.CharField(max_length=800, blank=True, null= True)
 
     genre = models.ForeignKey(Genre, on_delete=models.CASCADE, related_name="stories")
-    author = models.ForeignKey(CustomUser, on_delete=models.CASCADE,  related_name="stories", verbose_name="author")
+    author = models.ForeignKey(CustomUser, on_delete=models.CASCADE,  related_name="stories", verbose_name="author", editable=False)
     
     version = models.DecimalField(default=1, max_digits=4, decimal_places=1, editable=False)
     

@@ -1,28 +1,39 @@
 from rest_framework import serializers
 
 from stories.models import Story, Text, Genre
-
+from users.models import CustomUser
 
 class GenreSerializer(serializers.ModelSerializer):
     class Meta:
         model = Genre
         fields = '__all__'  
 
-class StorySerializer(serializers.ModelSerializer):
-    genre_data = GenreSerializer(source='genre', read_only=True)
 
+class AuthorSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Story
-        exclude = ['has_changes','has_big_changes','is_current_version','author','date_updated','date_created']
+        model = CustomUser
+        fields = ['email','id'] 
 
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        data['genre'] = data.pop('genre_data')
-        return data
+
 
 class TextSerializer(serializers.ModelSerializer):
     class Meta:
         model = Text
-        fields = '__all__'
+        exclude = ['date_updated','date_created']
 
+    
+    
+    
+    
+class StorySerializer(serializers.ModelSerializer):
+    genre_data = GenreSerializer(source='genre', read_only=True)
+    author_data = AuthorSerializer(source='author', read_only=True)
+    class Meta:
+        model = Story
+        exclude = ['has_changes','has_big_changes','is_current_version','date_updated','date_created']
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['genre'] = data.pop('genre_data')
+        data['author'] = data.pop('author_data')
+        return data

@@ -138,7 +138,9 @@ class Text(BaseModel):
             if self.previous_text != None:
                 self.story = self.previous_text.story
             else:
-                raise NewStartTextNotAllowed()
+                story_texts = Text.objects.filter(story=self.story, previous_text=None)
+                if story_texts.exists():
+                    raise NewStartTextNotAllowed()
 
         super().save(*args, **kwargs)
     

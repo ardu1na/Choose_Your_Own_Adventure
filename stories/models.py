@@ -114,7 +114,7 @@ class Text(BaseModel):
                 self.story.save()
             
             if original_instance.previous_text != self.previous_text:  
-                if self.is_saved:
+                if self.story.is_saved:
                     raise TextChangeNotAllowed()
 
         super().save(*args, **kwargs)

@@ -1,22 +1,33 @@
+
 from rest_framework import viewsets
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 
-from stories.models import Story, Text, TextChangeNotAllowed
+from stories.models import Story, Text
 from stories.serializers import StorySerializer, TextSerializer
 
 
 class StoryViewSet(viewsets.ModelViewSet):
     queryset = Story.objects.all()
     serializer_class = StorySerializer
-    permission_classes = [IsAuthenticated]
+
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        try: 
+            
+        
+                serializer.save(author=self.request.user)
+            
+        except:
+            raise PermissionDenied("Not logged in users do not have permission to create an story.")
+   
 
     def perform_update(self, serializer):
-        serializer.save(author=self.request.user)
+        try:
+            if serializer.author == self.request.user:
+                serializer.save(author=self.request.user)
+        except AttributeError:
+            raise PermissionDenied("You do not have permission to edit this.")
 
     def perform_destroy(self, instance):
         if instance.author == self.request.user:
@@ -27,13 +38,22 @@ class StoryViewSet(viewsets.ModelViewSet):
 
 class TextViewSet(viewsets.ModelViewSet):
     serializer_class = TextSerializer
+    
+    def perform_destroy(self, instance):
+        if instance.story.author == self.request.user:
+            instance.delete()
+        else:
+            raise PermissionDenied("You do not have permission to delete this story.")
+        
+    
 
-    def update(self, request, *args, **kwargs):
+    def perform_update(self, serializer):
         try:
-            return super().update(request, *args, **kwargs)
-        except TextChangeNotAllowed as e:
-            return Response({"error": str(e)}, status=e.status_code)
-
+            if serializer.story.author == self.request.user:
+                serializer.save()
+        except AttributeError:
+            raise PermissionDenied("You do not have permission to edit this.")
+    
     def get_queryset(self):
         # Get the story_id from the URL parameter
         story_id = self.kwargs.get('story_id')
@@ -44,10 +64,15 @@ class TextViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         story_id = self.kwargs.get('story_id')
+        story = Story.objects.filter(id=story_id).first()
+        
+        if story != None:
+            if story.author != self.request.user:
+                raise PermissionDenied("You do not have permission to change any of this story.")
+            
 
         serializer.save(story_id=story_id)
         
-    
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
         

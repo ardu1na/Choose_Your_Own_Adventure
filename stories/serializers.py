@@ -33,7 +33,6 @@ class TextSerializer(serializers.ModelSerializer):
     
 class StorySerializer(serializers.ModelSerializer):
     genre_data = GenreSerializer(source='genre', read_only=True)
-    author_data = AuthorSerializer(source='author', read_only=True)
     class Meta:
         model = Story
         exclude = ['date_updated','date_created']
@@ -41,7 +40,6 @@ class StorySerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data['genre'] = data.pop('genre_data')
-        data['author'] = data.pop('author_data')
         return data
     
     

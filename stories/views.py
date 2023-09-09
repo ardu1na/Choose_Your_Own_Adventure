@@ -13,39 +13,32 @@ class StoryViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
-        # Set the author field to the current user when creating a story
         serializer.save(author=self.request.user)
 
     def perform_update(self, serializer):
-        # Set the author field to the current user when updating a story
         serializer.save(author=self.request.user)
 
     def perform_destroy(self, instance):
-        # Ensure the user deleting the story is the author
         if instance.author == self.request.user:
             instance.delete()
         else:
-            # You can raise a permission denied exception or handle it as needed
             raise PermissionDenied("You do not have permission to delete this story.")
 
 
 class TextViewSet(viewsets.ModelViewSet):
     serializer_class = TextSerializer
-    
+
     def get_queryset(self):
         # Get the story_id from the URL parameter
         story_id = self.kwargs.get('story_id')
 
-        # Filter Text instances related to the specified Story
         queryset = Text.objects.filter(story__id=story_id)
 
         return queryset
 
     def perform_create(self, serializer):
-        # Get the story_id from the URL parameter
         story_id = self.kwargs.get('story_id')
 
-        # Create a Text instance related to the specified Story
         serializer.save(story_id=story_id)
         
     

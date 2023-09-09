@@ -1,6 +1,12 @@
 from decimal import Decimal, ROUND_DOWN
 from django.db import models
+
 from users.models import CustomUser
+
+## TODO: 
+# manage history version when user delete add or change order of history texts choices
+# save that instnace if it is saved as not_published,  not current_version
+# duplicate story and its texts within history.new_version_big_changes with the updated data
 
 class BaseModel(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
@@ -24,23 +30,25 @@ class Story(BaseModel):
     about = models.CharField(max_length=800, blank=True, null= True)
 
     genre = models.ForeignKey(Genre, on_delete=models.CASCADE, related_name="stories")
-    author = models.ForeignKey(CustomUser, on_delete=models.CASCADE,  related_name="stories", verbose_name="author", editable=False)
+    author = models.ForeignKey(CustomUser, on_delete=models.CASCADE,  related_name="stories", verbose_name="author")#, editable=False)
     
     version = models.DecimalField(default=1, max_digits=4, decimal_places=1, editable=False)
     
     published = models.BooleanField(default=False)
     
-    has_changes = models.BooleanField(default=False)
-    has_big_changes = models.BooleanField(default=False)
     
     is_current_version = models.BooleanField(default=True)
     
     @property
+    def is_saved(self):
+        for choice in self.texts.all():
+            if choice.saved.exists():
+                return True
+            
+    @property
     def need_duplicate(self):
         if self.pk and self.published and self.is_saved:
-            return True
-    
-    
+            return True   
     
     @property
     def big_changes_new_version(self):
@@ -48,16 +56,19 @@ class Story(BaseModel):
         new_version = version + 1
         return new_version
     
-    
-    
+       
     @property
     def small_changes_new_version(self):
-        if self.has_changes:
-            new_version = self.version + Decimal(0.1)   
-            return new_version
-                
+        new_version = self.version + Decimal(0.1)   
+        return new_version
+            
       
-      
+    def save(self, *args, **kwargs):
+        if self.pk:
+            original_instance = Story.objects.get(pk=self.pk)
+            if original_instance.title != self.title:
+                self.version = self.small_changes_new_version
+        super().save(*args, **kwargs)   
     
     @property
     def get_likes(self):
@@ -73,13 +84,6 @@ class Story(BaseModel):
             
         return users
 
-    @property
-    def is_saved(self):
-        for choice in self.texts.all():
-            if choice.saved.exists():
-                return True
-            
-            
     def __str__ (self):
         return f'{self.title} {self.version}'
     
@@ -99,7 +103,7 @@ class Saved(BaseModel):
     
     
     def __str__ (self):
-        return f'{self.player.user.username} played {self.stage.story.title} (saved)'
+        return f'{self.player} played {self.stage.story.title} (saved)'
 
 
     @property
@@ -161,7 +165,13 @@ class Text(BaseModel):
  
     text = models.TextField(null=True, blank=True)
     
-    
+    def save(self, *args, **kwargs):
+        if self.pk:
+            original_instance = Text.objects.get(pk=self.pk)
+            if original_instance.option != self.option or original_instance.text != self.text:
+                self.story.version = self.story.small_changes_new_version
+                self.story.save()
+        super().save(*args, **kwargs)
         
     def __str__ (self):
         return self.option if self.option else self.story_title
@@ -203,4 +213,4 @@ class Text(BaseModel):
     def need_duplicate(self):
         if self.story and self.story.published and self.story.is_saved:
             return True
-    
+ 

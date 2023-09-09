@@ -17,11 +17,17 @@ class AuthorSerializer(serializers.ModelSerializer):
 
 
 class TextSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Text
-        exclude = ['date_updated','date_created']
+        exclude = ['date_updated','date_created','story']
 
-    
+    choices = serializers.SerializerMethodField()
+
+    def get_choices(self, obj):
+        choices = Text.objects.filter(previous_text=obj)
+        return TextSerializer(choices, many=True).data
+
     
     
     
@@ -37,3 +43,5 @@ class StorySerializer(serializers.ModelSerializer):
         data['genre'] = data.pop('genre_data')
         data['author'] = data.pop('author_data')
         return data
+    
+    

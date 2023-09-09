@@ -61,13 +61,14 @@ class TextViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         story_id = self.kwargs.get('story_id')
         story = Story.objects.filter(id=story_id).first()
-        
-        if story != None:
+
+        if story is not None:
             if story.author != self.request.user:
                 raise PermissionDenied("You do not have permission to change any of this story.")
-            
 
         serializer.save(story_id=story_id)
+
+
         
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
@@ -75,19 +76,34 @@ class TextViewSet(viewsets.ModelViewSet):
         # Filter the queryset to get the root text (no previous_text)
         root_text = queryset.filter(previous_text__isnull=True).first()
         
-        # Serialize the entire text tree starting from the root text
-        serialized_tree = self.serialize_text_tree(root_text)
+        if root_text is not None:
+            # Serialize the entire text tree starting from the root text
+            serialized_tree = self.serialize_text_tree(root_text)
+            return Response(serialized_tree)
+        else:
+            # Handle the case when there are no instances in the history
+            return Response([])
+        
+    def serialize_text_tree(self, text, exclude_fields=None):
+        if exclude_fields is None:
+            exclude_fields = []
 
-        return Response(serialized_tree)
+        # Add 'previous_text' to the list of fields to exclude
+        exclude_fields.append('previous_text')
 
-    def serialize_text_tree(self, text):
+        # Serialize the text
         serialized_text = TextSerializer(text).data
+
+        # Exclude specified fields
+        for field in exclude_fields:
+            serialized_text.pop(field, None)
 
         # Recursively serialize the next texts (text tree)
         choices = text.choices.all()
         if choices:
             serialized_text['choices'] = [
-                self.serialize_text_tree(choice) for choice in choices
+                self.serialize_text_tree(choice, exclude_fields) for choice in choices
             ]
 
         return serialized_text
+

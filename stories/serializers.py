@@ -16,18 +16,6 @@ class AuthorSerializer(serializers.ModelSerializer):
 
     
     
-class StorySerializer(serializers.ModelSerializer):
-    genre_data = GenreSerializer(source='genre', read_only=True)
-    author = AuthorSerializer()
-    class Meta:
-        model = Story
-        exclude = ['date_updated','date_created']
-        
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        data['genre'] = data.pop('genre_data')
-        return data
-    
     
 
 
@@ -35,12 +23,23 @@ class StorySerializer(serializers.ModelSerializer):
 class TextSerializer(serializers.ModelSerializer):
     class Meta:
         model = Text
-        exclude = ['date_updated','date_created',]
+        exclude = ['date_updated','date_created','story']
 
-    choices = serializers.SerializerMethodField()
+    
 
-    def get_choices(self, obj):
-        choices = Text.objects.filter(previous_text=obj)
-        return TextSerializer(choices, many=True).data
+
+class StorySerializer(serializers.ModelSerializer):
+    genre_data = GenreSerializer(source='genre', read_only=True)
+    author = AuthorSerializer(source='customuser', read_only=True)
+    
+    
+    class Meta:
+        model = Story
+        exclude = ['date_updated', 'date_created']  
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['genre'] = data.pop('genre_data')
+        return data
 
     

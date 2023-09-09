@@ -13,7 +13,11 @@ class TextChangeNotAllowed(exceptions.APIException):
     """ TODO:
             - offer to copy the story and edit that with version+1
     """
-
+class NewStartTextNotAllowed(exceptions.APIException):
+    status_code = 400
+    default_detail = "Cannot add another first text because the story already has one. Add a 'before_text'."
+    default_code = "text_creation_not_allowed"
+    
 
 class BaseModel(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
@@ -39,9 +43,9 @@ class Story(BaseModel):
     about = models.CharField(max_length=800, blank=True, null= True)
 
     genre = models.ForeignKey(Genre, on_delete=models.CASCADE, related_name="stories")
-    author = models.ForeignKey(CustomUser, on_delete=models.CASCADE,  related_name="stories", verbose_name="author")#, editable=False)
+    author = models.ForeignKey(CustomUser, on_delete=models.CASCADE,  related_name="stories", editable=False)
     
-    version = models.DecimalField(default=1, max_digits=4, decimal_places=1, editable=False)
+    version = models.DecimalField(default=1, max_digits=4, decimal_places=2, editable=False)
     
     published = models.BooleanField(default=False)
     
@@ -120,9 +124,12 @@ class Text(BaseModel):
             if original_instance.previous_text != self.previous_text:  
                 if self.story.is_saved:
                     raise TextChangeNotAllowed()
-        if self.previous_text != None:
-            self.story = self.previous_text.story
+        else:
             
+            if self.previous_text != None:
+                self.story = self.previous_text.story
+            else:
+                raise NewStartTextNotAllowed()
 
         super().save(*args, **kwargs)
     
@@ -176,8 +183,12 @@ class Saved(BaseModel):
     stage = models.ForeignKey(Text, related_name="saved", on_delete=models.CASCADE)
     finished = models.BooleanField(default=False)
     story =  models.ForeignKey(Story, related_name="saved", on_delete=models.CASCADE)
+    story_version = models.DecimalField(editable=False, max_digits=4, decimal_places=2)
     
-    
+    def save(self, *args, **kwargs):
+        self.story_version = self.story.version
+        super().save(*args, **kwargs)
+        
     def __str__ (self):
         return f'{self.player} played {self.story.title} (saved)'
 

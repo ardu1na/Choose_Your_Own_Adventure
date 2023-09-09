@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from stories.models import Story, Text, Genre, Saved
+from stories.models import Story, Text, Genre,\
+    Saved, Like
 from users.models import CustomUser
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -8,6 +9,11 @@ class GenreSerializer(serializers.ModelSerializer):
         model = Genre
         fields = '__all__'  
 
+
+class LikeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Like
+        fields = '__all__'  
 
 class AuthorSerializer(serializers.ModelSerializer):
     class Meta:
@@ -20,7 +26,7 @@ class AuthorSerializer(serializers.ModelSerializer):
 class SavedSerializer(serializers.ModelSerializer):
     class Meta:
         model = Saved
-        exclude = ['player',]
+        exclude = ['player', 'date_created']
 
 
 class TextSerializer(serializers.ModelSerializer):
@@ -34,8 +40,7 @@ class TextSerializer(serializers.ModelSerializer):
 class StorySerializer(serializers.ModelSerializer):
     genre_data = GenreSerializer(source='genre', read_only=True)
     author = AuthorSerializer(source='customuser', read_only=True)
-    
-    
+    likes = serializers.ReadOnlyField(source='get_likes')
     class Meta:
         model = Story
         exclude = ['date_updated', 'date_created']  

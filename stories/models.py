@@ -91,12 +91,11 @@ class Story(BaseModel):
     
     @property
     def get_users_who_liked(self):
-        likes = self.likes.all()
-        users = []
-        for like in likes:
-            users.append(like.user)
-            
-        return users
+        users = CustomUser.objects.filter(likes__story=self)
+        if users.exists():
+            return users
+        else:
+            return None
 
     def __str__ (self):
         return f'{self.title} {self.version}'
@@ -205,7 +204,7 @@ class Like(BaseModel):
     user = models.ForeignKey(CustomUser, related_name="likes", on_delete=models.CASCADE)
     story = models.ForeignKey(Story, related_name="likes", on_delete=models.CASCADE)
     def __str__ (self):
-        return f'{self.user.user.username} liked {self.story.title}'
+        return f'{self.user} liked {self.story.title}'
 
 
     

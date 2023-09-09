@@ -9,6 +9,10 @@ class TextChangeNotAllowed(exceptions.APIException):
     status_code = 400
     default_detail = "Cannot change this text because the story is already being played by users."
     default_code = "text_change_not_allowed"
+    
+    """ TODO:
+            - offer to copy the story and edit that with version+1
+    """
 
 
 class BaseModel(models.Model):
@@ -116,6 +120,9 @@ class Text(BaseModel):
             if original_instance.previous_text != self.previous_text:  
                 if self.story.is_saved:
                     raise TextChangeNotAllowed()
+        if self.previous_text != None:
+            self.story = self.previous_text.story
+            
 
         super().save(*args, **kwargs)
     
@@ -135,7 +142,7 @@ class Text(BaseModel):
     
     @property
     def is_start (self):
-        if self.option == None:
+        if self.previous_text == None:
             return True
     
     @property

@@ -6,7 +6,6 @@ from rest_framework.exceptions import PermissionDenied
 from stories.models import Story, Text
 from stories.serializers import StorySerializer, TextSerializer
 
-
 class StoryViewSet(viewsets.ModelViewSet):
     queryset = Story.objects.all()
     serializer_class = StorySerializer
@@ -14,10 +13,7 @@ class StoryViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         try: 
-            
-        
-                serializer.save(author=self.request.user)
-            
+            serializer.save(author=self.request.user)
         except:
             raise PermissionDenied("Not logged in users do not have permission to create an story.")
    
@@ -49,10 +45,10 @@ class TextViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         try:
-            if serializer.story.author == self.request.user:
+            if serializer.instance.story.author == self.request.user:
                 serializer.save()
         except AttributeError:
-            raise PermissionDenied("You do not have permission to edit this.")
+            raise PermissionDenied(f"You do not have permission to edit this. {serializer.story.author} {self.request.user}")
     
     def get_queryset(self):
         # Get the story_id from the URL parameter

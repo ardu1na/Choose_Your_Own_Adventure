@@ -93,17 +93,19 @@ class Story(BaseModel):
         super().save(*args, **kwargs)   
     
     @property
-    def get_likes(self):
+    def likes_q(self):
         likes = self.likes.all()
         return likes.count()
     
     @property
-    def get_users_who_liked(self):
+    def likes_users(self):
         users = CustomUser.objects.filter(likes__story=self)
         if users.exists():
             return users
         else:
             return None
+        
+        
 
     def __str__ (self):
         return f'{self.title} {self.version}'
@@ -238,7 +240,8 @@ class Rate(BaseModel):
     story = models.ForeignKey(Story, related_name="rates", on_delete=models.CASCADE)
     def __str__ (self):
         return f'{self.user.username} rated {self.story.title}'
-
+    class Meta:
+        unique_together = ['user', 'story']
 
     
 class Comment(BaseModel):

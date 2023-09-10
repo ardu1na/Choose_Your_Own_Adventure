@@ -1,6 +1,6 @@
 from rest_framework.routers import DefaultRouter
 
-from stories.views import StoryViewSet, TextViewSet,\
+from stories.views import StoryViewSet, \
     SavedViewSet, LikeViewSet
     
     

@@ -1,0 +1,10 @@
+
+GET https://chooseyourownadventure.pythonanywhere.com/api/stories/1
+Content-Type: application/json
+###
+
+POST   https://chooseyourownadventure.pythonanywhere.com/api/stories/
+Content-Type: application/json
+
+{ "title": "test", "genre": "1" }
+

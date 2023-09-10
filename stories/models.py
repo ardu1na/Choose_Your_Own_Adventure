@@ -7,12 +7,10 @@ from users.models import CustomUser
 ######## UTILS
 class TextChangeNotAllowed(exceptions.APIException):
     status_code = 400
-    default_detail = "Cannot change this text because the story is already being played by users."
+    default_detail = "Cannot change this text because the story is already being played by users. Go to api/stories/ < story__id > /clone/ to start a new one from this."
     default_code = "text_change_not_allowed"
     
-    """ TODO:
-            - offer to copy the story and edit that with version+1
-    """
+    
 class NewStartTextNotAllowed(exceptions.APIException):
     status_code = 400
     default_detail = "Cannot add another first text because the story already has one. Add a 'before_text'."
@@ -41,7 +39,6 @@ class Story(BaseModel):
     """
         # TODO:
             - ONLY ONE VERSION CAN BE PUBLISHED
-            - ENDPOINT FOR STORY
     """
     title = models.CharField(max_length=150)
     about = models.CharField(max_length=800, blank=True, null= True)
@@ -72,6 +69,8 @@ class Story(BaseModel):
             an alert must to be show, a message to players, with something like "your playing and old version of this story"
         """
         # Clone the story
+        self.published = False
+        self.save()
         
         cloned_story = Story(
             title=f"Clon of {self.title}",

@@ -86,7 +86,9 @@ class StoryViewSet(viewsets.ModelViewSet):
     """
         In order to go to story__texts use: api/stories/ < story__id > /texts
         Only logged in users can create stories.
-        Only author can update or delete its own stories
+        Only author can update or delete its own stories.
+        If a story is saved by an user, it wont be updated, instead offer the user clone it:
+        CLONE STORY  api/stories/ < story__id > /clone/ to start a new one from the original.
     """
     queryset = Story.objects.all()
     serializer_class = StorySerializer

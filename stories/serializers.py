@@ -38,21 +38,25 @@ class TextSerializer(serializers.ModelSerializer):
 
     
 
-
 class StorySerializer(serializers.ModelSerializer):
+    author_id = serializers.ReadOnlyField(source='author.id')
+    author_username = serializers.ReadOnlyField(source='author.username')
+
     genre_data = GenreSerializer(source='genre', read_only=True)
-    author = AuthorSerializer(source='customuser', read_only=True)
     likes = serializers.ReadOnlyField(source='get_likes')
     created = serializers.ReadOnlyField(source='created_at')
     updated = serializers.ReadOnlyField(source='updated_at')
 
     class Meta:
         model = Story
-        exclude = ['date_updated', 'date_created']  
+        exclude = ['date_updated', 'date_created', 'author']
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data['genre'] = data.pop('genre_data')
+        data['author'] = {
+            'author_id': data.pop('author_id'),
+            'author_username': data.pop('author_username')
+        }
         return data
 
-    

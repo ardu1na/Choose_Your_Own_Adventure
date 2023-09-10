@@ -38,7 +38,11 @@ class Genre(models.Model):
 
 
 class Story(BaseModel):
-    
+    """
+        # TODO:
+            - ONLY ONE VERSION CAN BE PUBLISHED
+            - ENDPOINT FOR STORY
+    """
     title = models.CharField(max_length=150)
     about = models.CharField(max_length=800, blank=True, null= True)
 
@@ -59,6 +63,40 @@ class Story(BaseModel):
     def updated_at(self):
         return f"{self.date_updated.strftime('%d-%m-%Y %H:%M')}"
     
+    def clone_story(self):
+        """
+            if user wants to make a big change of an story, and the story is saved by another player,
+            he can clone the story with a new version and make the changes there.
+            the original story goes to unpublished
+            
+            an alert must to be show, a message to players, with something like "your playing and old version of this story"
+        """
+        # Clone the story
+        
+        cloned_story = Story(
+            title=f"Clon of {self.title}",
+            about=self.about,
+            genre=self.genre,
+            author= self.author,
+            version=self.big_changes_new_version, 
+            published=False,  
+        )
+        cloned_story.save()
+
+        text_mapping = {}
+
+        for original_text in self.texts.all():
+            cloned_text = Text(
+                story=cloned_story,
+                option=original_text.option,
+                text=original_text.text,
+            )
+            if original_text.previous_text:
+                cloned_text.previous_text = text_mapping.get(original_text.previous_text)
+            cloned_text.save()
+            text_mapping[original_text] = cloned_text
+
+        return cloned_story
     
     @property
     def is_saved(self):

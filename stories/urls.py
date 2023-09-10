@@ -1,8 +1,7 @@
 from rest_framework.routers import DefaultRouter
 
 from stories.views import StoryViewSet, \
-    SavedViewSet, LikeViewSet, TextViewSet
-    
+    SavedViewSet, LikeViewSet, TextViewSet    
     
 router = DefaultRouter()
 router.register(r'stories', StoryViewSet, basename='story')

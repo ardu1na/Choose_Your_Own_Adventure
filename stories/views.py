@@ -1,5 +1,6 @@
 
-from rest_framework import viewsets
+from rest_framework import viewsets, status
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 
@@ -8,6 +9,25 @@ from stories.models import Story, Text,\
 from stories.serializers import StorySerializer, TextSerializer,\
     SavedSerializer, LikeSerializer
     
+    
+class CloneStoryAPIView(APIView):
+    def get(self, request, story_id, *args, **kwargs):
+        try:
+            story = Story.objects.filter(pk=story_id).first()
+            
+            if not story:
+                return Response({'message': 'Story not found'}, status=status.HTTP_404_NOT_FOUND)
+            if request.user == story.author:
+                clon = story.clone_story()
+                clon_serializer = StorySerializer(instance=clon)
+                return Response({'message': 'Story cloned', 'cloned_story': clon_serializer.data}, status=status.HTTP_201_CREATED)
+            else:
+                return Response({'message':'Not authorized user'}, status= status.HTTP_401_UNAUTHORIZED)
+        except Exception as e:
+            return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        
+        
 class SavedViewSet(viewsets.ModelViewSet):
     serializer_class = SavedSerializer
 
@@ -71,7 +91,18 @@ class StoryViewSet(viewsets.ModelViewSet):
     queryset = Story.objects.all()
     serializer_class = StorySerializer
 
+    
+        
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
 
+        
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+        
+        
+        
     def perform_create(self, serializer):
         
         try: 

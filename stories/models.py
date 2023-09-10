@@ -171,15 +171,7 @@ class Text(BaseModel):
                 return False
         return True
     
-            
-            
-    @property
-    def previous_option(self):
-        if self.is_start:
-            return "Start"
-        else:
-            return self.previous_text
-    
+        
     
     @property
     def need_duplicate(self):

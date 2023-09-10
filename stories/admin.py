@@ -50,7 +50,7 @@ admin.site.register(Story, StoryAdmin)
 
 class TextAdmin(admin.ModelAdmin):
     inlines = TextInline,
-    list_display = ['story', 'option', 'previous_option']
+    list_display = ['story', 'option', 'previous_text']
 admin.site.register(Text, TextAdmin)
 
 

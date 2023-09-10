@@ -63,11 +63,17 @@ class LikeViewSet(viewsets.ModelViewSet):
 
 
 class StoryViewSet(viewsets.ModelViewSet):
+    """
+        In order to go to story__texts use: api/stories/ < story__id > /texts
+        Only logged in users can create stories.
+        Only author can update or delete its own stories
+    """
     queryset = Story.objects.all()
     serializer_class = StorySerializer
 
 
     def perform_create(self, serializer):
+        
         try: 
             serializer.save(author=self.request.user)
         except:
@@ -96,15 +102,30 @@ class TextViewSet(viewsets.ModelViewSet):
             instance.delete()
         else:
             raise PermissionDenied("You do not have permission to delete this story.")
-        
     
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        
+        if not isinstance(serializer.instance, list):
+            next_choices = [{'id': choice.id, 'option': choice.option} for choice in instance.choices.all()]
+            
+            response_data = {
+                **serializer.data,
+                'next_choices': next_choices,
+            }
+            
+            return Response(response_data)
+        return Response(serializer.data)
+
+
 
     def perform_update(self, serializer):
         try:
             if serializer.instance.story.author == self.request.user:
                 serializer.save()
         except AttributeError:
-            raise PermissionDenied(f"You do not have permission to edit this. {serializer.story.author} {self.request.user}")
+            raise PermissionDenied(f"You do not have permission to edit this {self.request.user}")
     
     def get_queryset(self):
         # Get the story_id from the URL parameter

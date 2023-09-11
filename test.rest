@@ -3,8 +3,10 @@ GET https://chooseyourownadventure.pythonanywhere.com/api/stories/1
 Content-Type: application/json
 ###
 
-POST   http://127.0.0.1:8000/users/
+POST   http://127.0.0.1:8000/api/stories/
 Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjk0NTI3MjMxLCJpYXQiOjE2OTQ0NDA4MzEsImp0aSI6IjM0NzMwYWUzOGI4ZDRhODRiZDI5MGQ4MzIxYTI2ZjY4IiwidXNlcl9pZCI6MX0.h-0gveZhyt2o9nzJnlp_R_AD-UkUua6h_UwUKPifqvk
 
-{ "username": "user1", "password": "TuVieja1231!!", "email": "mail@gmail.com" }
+
+{ "title": "user1", "genre": "1" }
 

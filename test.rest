@@ -3,8 +3,8 @@ GET https://chooseyourownadventure.pythonanywhere.com/api/stories/1
 Content-Type: application/json
 ###
 
-POST   https://chooseyourownadventure.pythonanywhere.com/api/stories/
+POST   http://127.0.0.1:8000/users/
 Content-Type: application/json
 
-{ "title": "test", "genre": "1" }
+{ "username": "user1", "password": "TuVieja1231!!", "email": "mail@gmail.com" }
 

@@ -36,7 +36,10 @@ class Genre(models.Model):
 
 
 class Story(BaseModel):
-    
+    """
+        # TODO:
+            - ONLY ONE VERSION CAN BE PUBLISHED
+    """
     title = models.CharField(max_length=150)
     about = models.CharField(max_length=800, blank=True, null= True)
 
@@ -145,18 +148,14 @@ class Story(BaseModel):
         return f'{self.title} {self.version}'
     
 
-
 class Text(BaseModel):
     
     story = models.ForeignKey(Story, on_delete=models.CASCADE,  related_name="texts", null=True, blank=True)
-
-    previous_text = models.ForeignKey('Text', on_delete=models.CASCADE,  related_name="choices", blank=True, null=True)
-    
-    option = models.CharField(max_length=600, null=True, blank=True)
+  
  
     text = models.TextField(null=True, blank=True)
     
-    def save(self, *args, **kwargs):
+    """def save(self, *args, **kwargs):
         if self.pk:
             original_instance = Text.objects.get(pk=self.pk)
             
@@ -176,7 +175,7 @@ class Text(BaseModel):
                 if story_texts.exists():
                     raise NewStartTextNotAllowed()
 
-        super().save(*args, **kwargs)
+        super().save(*args, **kwargs)"""
     
     def delete(self, using=None, keep_parents=False):
         if self.story.is_saved:
@@ -184,28 +183,19 @@ class Text(BaseModel):
 
         super().delete(using=using, keep_parents=keep_parents)
 
-        
+    @property  
+    def text_data (self):
+        text = self.text[:55]
+        return text
+    
     def __str__ (self):
-        return self.option if self.option else self.story_title
+        return f'{self.text_data} - story {self.story}'
     
     @property
     def story_title (self):
         return self.story.title
     
-    @property
-    def is_start (self):
-        if self.previous_text == None:
-            return True
-    
-    @property
-    def is_end(self):
-        story = Story.objects.get(pk=self.story.pk)
-        for choice in story.text.all():
-            if choice.previous_text == self:
-                return False
-        return True
-    
-        
+            
     
     @property
     def need_duplicate(self):
@@ -214,7 +204,15 @@ class Text(BaseModel):
         return False
 
     
+class Choice(BaseModel):
+    option = models.CharField(max_length=600, null=True, blank=True)
+    prev_text = models.ForeignKey(Text, on_delete=models.CASCADE,  related_name="causes", blank=True, null=True)
+    next_text = models.ForeignKey(Text, on_delete=models.CASCADE,  related_name="choices", blank=True, null=True)
 
+    
+    def __str__(self):
+        return self.option
+    
 class Saved(BaseModel):
     player = models.ForeignKey(CustomUser, related_name="saved", on_delete=models.CASCADE)
     stage = models.ForeignKey(Text, related_name="saved", on_delete=models.CASCADE)

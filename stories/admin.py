@@ -1,10 +1,17 @@
 from django.contrib import admin
 from stories.models import  Story, Text, \
-    Genre, Like, Saved, Comment, Rate
+    Genre, Like, Saved, Comment, Rate, Choice
 
 
 
 
+class ChoiceInline(admin.TabularInline):
+    model= Choice
+    extra= 0
+    show_change_link = True
+    fk_name = "prev_text"
+    
+    
 class TextInline(admin.TabularInline):
     model= Text
     extra= 0
@@ -49,9 +56,12 @@ admin.site.register(Story, StoryAdmin)
 
 
 class TextAdmin(admin.ModelAdmin):
-    inlines = TextInline,
-    list_display = ['story', 'option', 'previous_text']
+    inlines=[ChoiceInline,]
+    list_display = ['story', 'text_data']
 admin.site.register(Text, TextAdmin)
+
+
+admin.site.register(Choice)
 
 
     

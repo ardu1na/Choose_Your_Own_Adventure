@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from stories.models import Story, Text, Genre,\
-    Saved, Like, Choice
+    Saved, Like
 from users.models import CustomUser
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -20,14 +20,9 @@ class LikeSerializer(serializers.ModelSerializer):
 class AuthorSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['email', 'username','id'] 
+        fields = ['email','id'] 
 
-class ChoiceSerializer(serializers.ModelSerializer):
     
-        
-    class Meta:
-        model = Choice
-        exclude = ['date_created',]  
     
     
 class SavedSerializer(serializers.ModelSerializer):

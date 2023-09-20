@@ -13,7 +13,7 @@ from drf_yasg import openapi
 
 
 from stories.urls import urlpatterns
-from stories.views import TextViewSet, CloneStoryAPIView
+from stories.views import TextViewSet, CloneStoryAPIView, ChoiceViewSet
 
 
 from users.views import Login, Logout
@@ -31,13 +31,18 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
-    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
-    path('admin/', admin.site.urls),
-    path('api/', include('stories.urls')),  
-    
-    path('api/stories/<int:story_id>/clone/', CloneStoryAPIView.as_view(), name= "clone_story"),  
-    path('api/stories/<int:story_id>/texts/', TextViewSet.as_view({'get': 'list', 'post': 'create'}), name='story-texts'),
-    path('api/stories/<int:story_id>/texts/<int:pk>/', TextViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name='story-text-detail'),
+   path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+   path('admin/', admin.site.urls),
+   path('api/', include('stories.urls')),  
+   
+   path('api/stories/<int:story_id>/clone/', CloneStoryAPIView.as_view(), name= "clone_story"),
+   
+   path('api/stories/<int:story_id>/texts/', TextViewSet.as_view({'get': 'list', 'post': 'create'}), name='story-texts'),
+   path('api/stories/<int:story_id>/texts/<int:pk>/', TextViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name='story-text-detail'),
+   
+   path('api/stories/<int:story_id>/texts/<int:text_id>/choices/<int:pk>/', ChoiceViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name='text-choices-detail'),
+   path('api/stories/<int:story_id>/texts/<int:text_id>/choices/', ChoiceViewSet.as_view({'get': 'list', 'post': 'create'}), name='text-choices'),
+
 
    path('logout/', Logout.as_view(), name = 'logout'),
    path('login/', Login.as_view(), name = 'login'),

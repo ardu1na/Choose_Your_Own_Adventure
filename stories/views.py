@@ -5,9 +5,9 @@ from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 
 from stories.models import Story, Text,\
-    Saved, Like
+    Saved, Like, Choice
 from stories.serializers import StorySerializer, TextSerializer,\
-    SavedSerializer, LikeSerializer
+    SavedSerializer, LikeSerializer, ChoiceSerializer
     
     
 class CloneStoryAPIView(APIView):
@@ -55,10 +55,22 @@ class SavedViewSet(viewsets.ModelViewSet):
         else:
             raise PermissionDenied("You do not have permission to delete this saved story.")
 
+       
+class ChoiceViewSet(viewsets.ModelViewSet):
+    serializer_class = ChoiceSerializer
+    
+    def get_queryset(self):
+        text_id = self.kwargs.get('text_id')
+        queryset = Choice.objects.filter(prev_text=text_id)
+
+        return queryset
 
 
 class LikeViewSet(viewsets.ModelViewSet):
     serializer_class = LikeSerializer
+    
+    
+    
 
     def get_queryset(self):
         return Like.objects.filter(user=self.request.user)
@@ -136,21 +148,7 @@ class TextViewSet(viewsets.ModelViewSet):
         else:
             raise PermissionDenied("You do not have permission to delete this story.")
     
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
-        
-        if not isinstance(serializer.instance, list):
-            next_choices = [{'id': choice.id, 'option': choice.option} for choice in instance.choices.all()]
-            
-            response_data = {
-                **serializer.data,
-                'next_choices': next_choices,
-            }
-            
-            return Response(response_data)
-        return Response(serializer.data)
-
+    
 
 
     def perform_update(self, serializer):
@@ -180,40 +178,3 @@ class TextViewSet(viewsets.ModelViewSet):
 
 
         
-    def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-        
-        # Filter the queryset to get the root text (no previous_text)
-        root_text = queryset.filter(previous_text__isnull=True).first()
-        
-        if root_text is not None:
-            # Serialize the entire text tree starting from the root text
-            serialized_tree = self.serialize_text_tree(root_text)
-            return Response(serialized_tree)
-        else:
-            # Handle the case when there are no instances in the history
-            return Response([])
-        
-    def serialize_text_tree(self, text, exclude_fields=None):
-        if exclude_fields is None:
-            exclude_fields = []
-
-        # Add 'previous_text' to the list of fields to exclude
-        exclude_fields.append('previous_text')
-
-        # Serialize the text
-        serialized_text = TextSerializer(text).data
-
-        # Exclude specified fields
-        for field in exclude_fields:
-            serialized_text.pop(field, None)
-
-        # Recursively serialize the next texts (text tree)
-        choices = text.choices.all()
-        if choices:
-            serialized_text['choices'] = [
-                self.serialize_text_tree(choice, exclude_fields) for choice in choices
-            ]
-
-        return serialized_text
-

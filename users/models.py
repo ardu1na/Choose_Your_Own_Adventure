@@ -3,6 +3,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 
+
 class CustomUserManager(BaseUserManager):
     def create_user(self,username, email, password=None, **extra_fields):
         
@@ -22,6 +23,9 @@ class CustomUserManager(BaseUserManager):
             raise ValueError(_('Superuser must have is_superuser=True.'))
 
         return self.create_user(email, username, password, **extra_fields)
+
+
+
 
 class CustomUser(AbstractUser):
     email = models.EmailField(unique=True)

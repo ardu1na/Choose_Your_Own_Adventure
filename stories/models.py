@@ -36,10 +36,7 @@ class Genre(models.Model):
 
 
 class Story(BaseModel):
-    """
-        # TODO:
-            - ONLY ONE VERSION CAN BE PUBLISHED
-    """
+    
     title = models.CharField(max_length=150)
     about = models.CharField(max_length=800, blank=True, null= True)
 
